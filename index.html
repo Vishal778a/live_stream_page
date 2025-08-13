@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Streams</title>
+  <style>
+    #streams {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .stream {
+      flex: 1 1 320px;
+      max-width: 320px;
+      background: #222;
+      padding: 10px;
+      border-radius: 8px;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    iframe {
+      width: 100%;
+      height: 180px;
+      border: none;
+      border-radius: 6px;
+    }
+    .title {
+      margin-top: 8px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .channel {
+      font-size: 12px;
+      color: #bbb;
+    }
+  </style>
+</head>
+<body>
+  <h1>Live Now</h1>
+  <div id="streams"></div>
+
+  <script>
+    const API_KEY = "AIzaSyAkWKgEkwrKIIAM-AiVMe2qQJTFjDtyN2Q";
+
+    // Your favorite channels, add both IDs and Names
+    const CHANNELS = [
+      { id: "UCcDcRFXX2wEAQQcX88zOYfA", name: "" },
+       { id: "UC09gfxgap1eKxIKwNjwedYQ", name: "" },
+	{ id: "UCxLrSgg2Khs5Fc71GMvIKNQ", name: "" },
+       { id: "UCmaUnINXzcFXbro2X4huKEQ", name: "" }
+    ];
+
+    async function fetchLiveByChannelId(channelId) {
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&maxResults=5&key=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.error(`Error fetching for channel ID ${channelId}:`, res.statusText);
+        return [];
+      }
+      const data = await res.json();
+      console.log(`Live search by Channel ID ${channelId}:`, data);
+      return data.items || [];
+    }
+
+    async function fetchLiveByChannelName(name) {
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(name)}&eventType=live&type=video&maxResults=5&key=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.error(`Error fetching for channel name ${name}:`, res.statusText);
+        return [];
+      }
+      const data = await res.json();
+      console.log(`Live search by Channel Name "${name}":`, data);
+      if (!data.items) return [];
+      // Filter results to include only those matching channel name (case insensitive)
+      return data.items.filter(item => item.snippet.channelTitle.toLowerCase().includes(name.toLowerCase()));
+    }
+
+    async function checkLive() {
+      const container = document.getElementById('streams');
+      container.innerHTML = "";
+
+      let allLiveStreams = [];
+
+      for (const channel of CHANNELS) {
+        // Try fetch by channel ID first
+        let liveVideos = await fetchLiveByChannelId(channel.id);
+
+        if (liveVideos.length === 0) {
+          // If none, fallback to search by name
+          liveVideos = await fetchLiveByChannelName(channel.name);
+        }
+
+        allLiveStreams.push(...liveVideos);
+      }
+
+      if (allLiveStreams.length === 0) {
+        container.innerHTML = "<p>No live streams currently.</p>";
+        return;
+      }
+
+      allLiveStreams.forEach(item => {
+        const videoId = item.id.videoId;
+        const title = item.snippet.title;
+        const channelTitle = item.snippet.channelTitle;
+
+        const div = document.createElement('div');
+        div.className = 'stream';
+        div.innerHTML = `
+          <iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>
+          <div class="title">${title}</div>
+          <div class="channel">${channelTitle}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    checkLive();
+    setInterval(checkLive, 60000);
+  </script>
+</body>
+</html>
