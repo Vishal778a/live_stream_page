@@ -1,187 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>YouTube Multi Stream Viewer</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YouTube Multi Stream with Chat</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: var(--bg, #121212);
-        color: var(--text, #fff);
-        margin: 0;
-        padding: 10px;
-        transition: background-color 0.3s, color 0.3s;
-    }
-    .controls {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        margin-bottom: 10px;
-    }
-    input, button {
-        padding: 6px;
-        font-size: 14px;
-    }
-    .stream-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    .stream-card {
-        background: var(--card, #1e1e1e);
-        border-radius: 8px;
-        overflow: hidden;
-        flex: 1 1 500px;
-        display: flex;
-        flex-direction: column;
-        transition: background 0.3s;
-    }
-    .stream-header {
-        padding: 5px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .video-chat-wrapper {
-        display: flex;
-        flex-direction: row;
-        height: 360px;
-    }
-    iframe {
-        border: none;
-    }
-    .video-frame {
-        flex: 2;
-    }
-    .chat-frame {
-        flex: 1;
-        border-left: 1px solid #444;
-    }
-    .slider {
-        width: 100px;
-    }
-    @media (max-width: 768px) {
-        .video-chat-wrapper {
-            flex-direction: column;
-            height: auto;
-        }
-        .chat-frame {
-            border-left: none;
-            border-top: 1px solid #444;
-            height: 300px;
-        }
-    }
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f5f5f5;
+  }
+  .container {
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 10px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+  }
+  .frame {
+    width: 100%;
+    height: 200px;
+    border: none;
+  }
+  .info {
+    padding: 8px;
+  }
+  .title {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meta {
+    font-size: 12px;
+    color: #555;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .badge {
+    background: red;
+    color: #fff;
+    padding: 2px 5px;
+    font-size: 10px;
+    border-radius: 3px;
+  }
+  .remove {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+  }
+  .card-wrapper {
+    position: relative;
+  }
+  .chat-container {
+    background: #f9f9f9;
+  }
+  .controls {
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chat-toggle {
+    background: #0073e6;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
-<div class="controls">
-    <input type="text" id="youtubeLink" placeholder="Paste YouTube link">
-    <button onclick="addStream()">Add Stream</button>
-    <button onclick="toggleTheme()">Toggle Dark/Light</button>
+<div style="padding:10px;">
+  <input type="text" id="streamUrl" placeholder="Paste YouTube link..." style="width:70%;">
+  <button id="addBtn">Add Stream</button>
 </div>
 
-<div class="stream-container" id="streamContainer"></div>
+<div class="container" id="grid"></div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    let players = {};
-    let darkMode = true;
+const el = {
+  grid: document.getElementById("grid"),
+  addBtn: document.getElementById("addBtn"),
+  urlInput: document.getElementById("streamUrl")
+};
 
-    function toggleTheme() {
-        darkMode = !darkMode;
-        document.body.style.setProperty('--bg', darkMode ? '#121212' : '#ffffff');
-        document.body.style.setProperty('--text', darkMode ? '#ffffff' : '#000000');
-        document.body.style.setProperty('--card', darkMode ? '#1e1e1e' : '#f4f4f4');
+let streams = [];
+
+function escapeHtml(str) {
+  return str.replace(/[&<>'"]/g, tag => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+  }[tag] || tag));
+}
+
+function extractVideoId(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtube.com")) {
+      if (u.searchParams.get("v")) return u.searchParams.get("v");
+      if (u.pathname.startsWith("/embed/")) return u.pathname.split("/")[2];
     }
+    if (u.hostname === "youtu.be") return u.pathname.substring(1);
+  } catch {}
+  return "";
+}
 
-    function getVideoId(url) {
-        const regex = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|shorts\/|embed\/))([\w-]{11})/;
-        const match = url.match(regex);
-        return match ? match[1] : null;
-    }
+function createEmbedUrl(videoId) {
+  return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+}
 
-    function addStream() {
-        const link = document.getElementById('youtubeLink').value.trim();
-        if (!link) return;
-        const videoId = getVideoId(link);
-        if (!videoId) {
-            alert('Invalid YouTube link');
-            return;
-        }
+function render() {
+  el.grid.innerHTML = "";
+  streams.forEach((s, idx) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "card-wrapper";
 
-        const container = document.getElementById('streamContainer');
+    const card = document.createElement("div");
+    card.className = "card";
 
-        // Create card
-        const card = document.createElement('div');
-        card.className = 'stream-card';
-        card.id = `card-${videoId}`;
+    card.innerHTML = `
+      <button class="remove" title="Remove" data-idx="${idx}">×</button>
+      <iframe class="frame" src="${s.embed}" allowfullscreen></iframe>
+      <div class="controls">
+        <label>Volume:
+          <input type="range" min="0" max="100" value="${s.volume}" data-idx="${idx}">
+        </label>
+        <button class="chat-toggle" data-idx="${idx}">💬 Chat</button>
+      </div>
+      <div class="info">
+        <h3 class="title" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</h3>
+        <div class="meta">
+          <span>${escapeHtml(s.author || 'YouTube')}</span>
+          <span class="badge">LIVE</span>
+        </div>
+      </div>
+      <div class="chat-container" style="display:none; max-height:300px;">
+        <iframe 
+          class="chat-frame"
+          src="https://www.youtube.com/live_chat?v=${extractVideoId(s.embed)}&embed_domain=${location.hostname}" 
+          frameborder="0"
+          style="width:100%;height:300px;">
+        </iframe>
+      </div>
+    `;
 
-        const header = document.createElement('div');
-        header.className = 'stream-header';
+    wrapper.appendChild(card);
+    el.grid.appendChild(wrapper);
+  });
 
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'Remove';
-        removeBtn.onclick = () => {
-            if (players[videoId]) {
-                players[videoId].destroy();
-                delete players[videoId];
-            }
-            card.remove();
-        };
+  // Remove
+  document.querySelectorAll(".remove").forEach(btn => {
+    btn.addEventListener("click", e => {
+      streams.splice(e.target.dataset.idx, 1);
+      render();
+    });
+  });
 
-        const volumeSlider = document.createElement('input');
-        volumeSlider.type = 'range';
-        volumeSlider.min = 0;
-        volumeSlider.max = 100;
-        volumeSlider.value = 50;
-        volumeSlider.className = 'slider';
-        volumeSlider.oninput = (e) => {
-            if (players[videoId]) {
-                players[videoId].setVolume(e.target.value);
-            }
-        };
+  // Volume slider (affects iframe with JS API - placeholder)
+  document.querySelectorAll('input[type="range"]').forEach(slider => {
+    slider.addEventListener("input", e => {
+      streams[e.target.dataset.idx].volume = e.target.value;
+    });
+  });
 
-        header.appendChild(removeBtn);
-        header.appendChild(volumeSlider);
+  // Chat toggle
+  document.querySelectorAll(".chat-toggle").forEach(btn => {
+    btn.addEventListener("click", e => {
+      const chatBox = e.target.closest(".card").querySelector(".chat-container");
+      chatBox.style.display = chatBox.style.display === "none" ? "block" : "none";
+    });
+  });
+}
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'video-chat-wrapper';
-
-        const videoDiv = document.createElement('div');
-        videoDiv.className = 'video-frame';
-        videoDiv.id = `player-${videoId}`;
-
-        const chatIframe = document.createElement('iframe');
-        chatIframe.className = 'chat-frame';
-        chatIframe.src = `https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${location.hostname}`;
-        chatIframe.allowFullscreen = true;
-
-        wrapper.appendChild(videoDiv);
-        wrapper.appendChild(chatIframe);
-
-        card.appendChild(header);
-        card.appendChild(wrapper);
-        container.appendChild(card);
-
-        // Init YouTube player
-        new YT.Player(`player-${videoId}`, {
-            videoId: videoId,
-            playerVars: { autoplay: 0 },
-            events: {
-                onReady: (event) => {
-                    players[videoId] = event.target;
-                    event.target.setVolume(50);
-                }
-            }
-        });
-
-        document.getElementById('youtubeLink').value = '';
-    }
-
-    function onYouTubeIframeAPIReady() {
-        console.log('YouTube API Ready');
-    }
+el.addBtn.addEventListener("click", () => {
+  const url = el.urlInput.value.trim();
+  if (!url) return;
+  const vid = extractVideoId(url);
+  if (!vid) {
+    alert("Invalid YouTube channel/video link");
+    return;
+  }
+  streams.push({
+    embed: createEmbedUrl(vid),
+    title: `Stream ${streams.length + 1}`,
+    author: "YouTube",
+    volume: 50
+  });
+  el.urlInput.value = "";
+  render();
+});
 </script>
+
 </body>
 </html>
