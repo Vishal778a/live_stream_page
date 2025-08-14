@@ -1,182 +1,359 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Live Streams</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.light { background: #f9f9f9; color: #0f0f0f; }
-    body.dark { background: #181818; color: #ffffff; }
+<meta charset="UTF-8" />
+<title>Live Streams</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root{
+    --bg:#111;
+    --text:#fff;
+    --card:#1e1e1e;
+    --muted:#a1a1a1;
+    --accent:#ff0000;
+    --btn:#2d2d2d;
+  }
+  body.light{
+    --bg:#f9f9f9;
+    --text:#0f0f0f;
+    --card:#ffffff;
+    --muted:#666;
+    --accent:#d60000;
+    --btn:#eaeaea;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    transition:background .25s,color .25s;
+  }
 
-    header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 16px; position: sticky; top: 0; z-index: 100;
-      background: inherit; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    }
-    .logo { font-size: 20px; font-weight: bold; color: #ff0000; }
+  /* Header */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:var(--card);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;gap:10px;
+    border-bottom:1px solid #00000022;
+  }
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700}
+  .logo-dot{width:14px;height:14px;background:var(--accent);border-radius:3px}
+  .controls{display:flex;gap:8px;align-items:center}
 
-    .toggle-btn {
-      background: none; border: 1px solid currentColor;
-      padding: 5px 10px; border-radius: 5px; cursor: pointer;
-      font-size: 14px; color: inherit;
-    }
+  /* Form */
+  #addForm{
+    display:flex;gap:8px;align-items:center;
+    padding:10px 14px;background:transparent;
+    position:sticky;top:56px;z-index:40;
+  }
+  #urlInput{
+    flex:1;min-width:0;
+    padding:10px 12px;border-radius:10px;border:1px solid #0000;
+    background:var(--card);color:var(--text);
+    outline:none;
+  }
+  #addBtn,#modeToggle{
+    border:none;border-radius:10px;padding:10px 12px;cursor:pointer;
+    background:var(--btn);color:var(--text);font-weight:600;
+  }
+  #addBtn{background:var(--accent);color:#fff}
+  #addBtn:active{transform:translateY(1px)}
+  #modeToggle:active{transform:translateY(1px)}
 
-    /* Input Area */
-    #addStreamForm {
-      display: flex; gap: 8px; padding: 10px 20px;
-      background: inherit; position: sticky; top: 48px; z-index: 90;
-    }
-    #addStreamForm input {
-      flex: 1; padding: 8px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc;
-    }
-    #addStreamForm button {
-      padding: 8px 12px; font-size: 14px; border-radius: 4px; border: none;
-      background: #ff0000; color: white; cursor: pointer;
-    }
-    #addStreamForm button:hover { background: #cc0000; }
+  /* Grid */
+  #streams{
+    padding:14px;
+    display:grid;gap:14px;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  }
 
-    #streams {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 20px; padding: 20px;
-    }
-    .stream {
-      border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-      background: inherit; transition: transform 0.2s ease;
-    }
-    .stream:hover { transform: translateY(-4px); }
-    iframe { width: 100%; height: 180px; border: none; display: block; }
-    .info { padding: 10px; }
-    .title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
-    .meta {
-      font-size: 12px; color: gray; display: flex; justify-content: space-between; align-items: center;
-    }
-    .live-badge {
-      background: red; color: white; font-weight: bold; font-size: 11px;
-      padding: 2px 5px; border-radius: 3px;
-    }
-  </style>
+  /* Card */
+  .card{
+    background:var(--card);
+    border-radius:14px;overflow:hidden;
+    box-shadow:0 1px 4px #00000022;
+    display:flex;flex-direction:column;
+    position:relative;
+  }
+  .frame{
+    width:100%;
+    aspect-ratio:16/9;
+    border:0;display:block;
+    background:#000;
+  }
+  .info{padding:10px 12px}
+  .title{font-size:14px;font-weight:700;line-height:1.3;margin:0 0 6px}
+  .meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .badge{
+    background:var(--accent);color:#fff;font-size:11px;font-weight:700;
+    padding:2px 6px;border-radius:4px;white-space:nowrap;
+  }
+  .remove{
+    position:absolute;top:8px;right:8px;
+    border:none;background:#00000080;color:#fff;
+    width:28px;height:28px;border-radius:999px;cursor:pointer;
+    font-size:16px;line-height:28px;text-align:center;
+  }
+  .remove:active{transform:translateY(1px)}
+
+  /* Mobile niceties */
+  @media (max-width:600px){
+    header{padding:8px 10px}
+    #addForm{top:52px;padding:8px 10px}
+    #streams{padding:10px;gap:10px}
+  }
+</style>
 </head>
-<body class="light">
-  <header>
-    <div class="logo">▶ YouTube Live</div>
-    <button id="themeToggle" class="toggle-btn">🌙 Dark Mode</button>
-  </header>
+<body>
 
-  <!-- Add New Live Stream Form -->
-  <form id="addStreamForm">
-    <input type="text" id="streamUrl" placeholder="Enter YouTube live stream link..." required>
-    <button type="submit">Add</button>
-  </form>
+<header>
+  <div class="brand">
+    <div class="logo-dot"></div>
+    <div>YouTube Live Viewer</div>
+  </div>
+  <div class="controls">
+    <button id="modeToggle">🌙</button>
+  </div>
+</header>
 
-  <div id="streams"></div>
+<form id="addForm" autocomplete="off">
+  <input id="urlInput" type="url" inputmode="url" placeholder="Paste any YouTube link (watch, youtu.be, channel/live, embed)…" required />
+  <button id="addBtn" type="submit">Add</button>
+</form>
 
-  <script>
-    const CHANNELS = [
-      { id: "UCcDcRFXX2wEAQQcX88zOYfA", name: "WarlordGamingNow" },
-      { id: "UC09gfxgap1eKxIKwNjwedYQ", name: "InvaderPsycho" },
-      { id: "UCxLrSgg2Khs5Fc71GMvIKNQ", name: "The Destined Gamer" },
-      { id: "UCmaUnINXzcFXbro2X4huKEQ", name: "RCade" },
-      { id: "UCkI-24m6t-DkbCN4EprozlA", name: "SahilBeast" },
-      { id: "UCt9blnRkIpyCAAXViMbCh1Q", name: "Guts Gaming" }
-    ];
+<main id="streams"></main>
 
-    const container = document.getElementById('streams');
+<script>
+  // ----- Default channels (preloaded) -----
+  const DEFAULT_CHANNELS = [
+    { id: "UCcDcRFXX2wEAQQcX88zOYfA", name: "WarlordGamingNow" },
+    { id: "UC09gfxgap1eKxIKwNjwedYQ", name: "InvaderPsycho" },
+    { id: "UCxLrSgg2Khs5Fc71GMvIKNQ", name: "The Destined Gamer" },
+    { id: "UCmaUnINXzcFXbro2X4huKEQ", name: "RCade" },
+    { id: "UCkI-24m6t-DkbCN4EprozlA", name: "SahilBeast" },
+    { id: "UCt9blnRkIpyCAAXViMbCh1Q", name: "Guts Gaming" }
+  ];
 
-    async function fetchVideoTitle(url) {
-      try {
-        const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-        if (!res.ok) throw new Error("No title found");
-        const data = await res.json();
-        return data.title || "Live Stream";
-      } catch {
-        return "Live Stream";
+  const streams = []; // {embed, title, author, source}
+
+  const el = {
+    grid: document.getElementById('streams'),
+    form: document.getElementById('addForm'),
+    input: document.getElementById('urlInput'),
+    mode: document.getElementById('modeToggle')
+  };
+
+  // Persist theme
+  (() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') document.body.classList.add('light');
+    el.mode.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+  })();
+
+  el.mode.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    el.mode.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+  });
+
+  // Add via form
+  el.form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = el.input.value.trim();
+    if (!url) return;
+
+    try {
+      const item = await buildStreamItemFromAnyYouTubeUrl(url);
+      if (!item || !item.embed) {
+        alert("Sorry, couldn't parse that YouTube link.");
+        return;
+      }
+      streams.push(item);
+      render();
+      el.input.value = '';
+    } catch (err) {
+      console.error(err);
+      alert("There was a problem adding this link.");
+    }
+  });
+
+  // Build card from any YT link (watch, youtu.be, channel/live, embed…)
+  async function buildStreamItemFromAnyYouTubeUrl(inputUrl) {
+    // 1) Try oEmbed first (works for watch links and many others; no API key).
+    const oembed = await fetchOEmbed(inputUrl);
+    if (oembed && oembed.html) {
+      const src = extractIframeSrc(oembed.html);
+      if (src) {
+        return {
+          embed: toEmbedSrc(src),
+          title: oembed.title || 'Live Stream',
+          author: oembed.author_name || 'YouTube',
+          source: inputUrl
+        };
       }
     }
 
-    function extractChannelIdOrVideoId(url) {
-      let match;
-      // Check for channel link
-      match = url.match(/channel\/([^/?]+)/);
-      if (match) return { type: 'channel', id: match[1] };
+    // 2) Fallback heuristic parsing.
+    const parsed = toEmbedFromHeuristics(inputUrl);
+    if (!parsed) return null;
 
-      // Check for video link
-      match = url.match(/v=([^&]+)/);
-      if (match) return { type: 'video', id: match[1] };
+    // Try to enrich title/author via oEmbed using a better URL target
+    const metaTry = await fetchOEmbed(parsed.oEmbedTarget || inputUrl);
+    return {
+      embed: parsed.embed,
+      title: (metaTry && metaTry.title) ? metaTry.title : 'Live Stream',
+      author: (metaTry && metaTry.author_name) ? metaTry.author_name : (parsed.kind === 'channel' ? 'Channel' : 'YouTube'),
+      source: inputUrl
+    };
+  }
 
+  // ---- Helpers ----
+  async function fetchOEmbed(url){
+    try{
+      const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+      if(!res.ok) return null;
+      return await res.json();
+    }catch{
       return null;
     }
+  }
 
-    async function createStreamCardFromUrl(url) {
-      const info = extractChannelIdOrVideoId(url);
-      if (!info) return alert("Invalid YouTube URL");
+  function extractIframeSrc(html){
+    const m = html.match(/src="([^"]+)"/i);
+    return m ? m[1] : null;
+  }
 
-      const title = await fetchVideoTitle(url);
-
-      const div = document.createElement('div');
-      div.className = 'stream';
-
-      let embedSrc = "";
-      if (info.type === 'channel') {
-        embedSrc = `https://www.youtube.com/embed/live_stream?channel=${info.id}`;
-      } else if (info.type === 'video') {
-        embedSrc = `https://www.youtube.com/embed/${info.id}`;
+  // Normalize any embed URL to standard youtube embed (strip extra params)
+  function toEmbedSrc(src){
+    try{
+      const u = new URL(src);
+      // already an /embed/… or /embed/live_stream
+      if (u.pathname.startsWith('/embed/')) {
+        // Keep core ID, drop autoplay & other noisy params
+        if (u.searchParams.has('autoplay')) u.searchParams.delete('autoplay');
+        return u.origin + u.pathname + (u.searchParams.toString() ? `?${u.searchParams.toString()}` : '');
       }
+      // fallback: return as-is
+      return src;
+    }catch{
+      return src;
+    }
+  }
 
-      div.innerHTML = `
-        <iframe src="${embedSrc}" allowfullscreen></iframe>
+  // Heuristic conversion when oEmbed doesn't return HTML
+  function toEmbedFromHeuristics(raw){
+    let u;
+    try { u = new URL(raw); } catch { return null; }
+
+    const host = u.hostname.replace(/^www\./,'');
+    const p = u.pathname;
+
+    // youtu.be/<id>
+    if (host === 'youtu.be' && p.length > 1) {
+      const id = p.slice(1).split('/')[0];
+      return { kind:'video', embed:`https://www.youtube.com/embed/${id}`, oEmbedTarget:`https://www.youtube.com/watch?v=${id}` };
+    }
+
+    // youtube.com/watch?v=ID
+    if (host.endsWith('youtube.com') && (p === '/watch' || p === '/live')) {
+      const id = u.searchParams.get('v');
+      if (id) return { kind:'video', embed:`https://www.youtube.com/embed/${id}`, oEmbedTarget:`https://www.youtube.com/watch?v=${id}` };
+    }
+
+    // youtube.com/shorts/ID
+    if (host.endsWith('youtube.com') && p.startsWith('/shorts/')) {
+      const id = p.split('/')[2];
+      if (id) return { kind:'video', embed:`https://www.youtube.com/embed/${id}`, oEmbedTarget:`https://www.youtube.com/watch?v=${id}` };
+    }
+
+    // Already an embed link
+    if (host.endsWith('youtube.com') && p.startsWith('/embed/')) {
+      return { kind:'video', embed: u.toString() };
+    }
+
+    // Channel live link or channel page
+    if (host.endsWith('youtube.com') && p.startsWith('/channel/')) {
+      const channelId = p.split('/')[2];
+      if (channelId) {
+        return {
+          kind:'channel',
+          embed:`https://www.youtube.com/embed/live_stream?channel=${channelId}`,
+          oEmbedTarget:`https://www.youtube.com/channel/${channelId}/live`
+        };
+      }
+    }
+
+    // Some people paste ?channel=UC... links
+    if (u.searchParams.get('channel')) {
+      const channelId = u.searchParams.get('channel');
+      return {
+        kind:'channel',
+        embed:`https://www.youtube.com/embed/live_stream?channel=${channelId}`,
+        oEmbedTarget:`https://www.youtube.com/channel/${channelId}/live`
+      };
+    }
+
+    // Cannot confidently parse
+    return null;
+  }
+
+  // ----- Rendering -----
+  function render(){
+    el.grid.innerHTML = '';
+    streams.forEach((s, idx) => {
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.innerHTML = `
+        <button class="remove" title="Remove" data-idx="${idx}">×</button>
+        <iframe class="frame" src="${s.embed}" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
         <div class="info">
-          <div class="title">${title}</div>
+          <h3 class="title" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</h3>
           <div class="meta">
-            <span>${info.type === 'channel' ? "Channel" : "Video"}</span>
-            <span class="live-badge">LIVE</span>
+            <span>${escapeHtml(s.author || 'YouTube')}</span>
+            <span class="badge">LIVE</span>
           </div>
         </div>
       `;
-      container.appendChild(div);
-    }
-
-    async function createStreamCard(channel) {
-      const url = `https://www.youtube.com/channel/${channel.id}/live`;
-      const title = await fetchVideoTitle(url);
-      const div = document.createElement('div');
-      div.className = 'stream';
-      div.innerHTML = `
-        <iframe src="https://www.youtube.com/embed/live_stream?channel=${channel.id}" allowfullscreen></iframe>
-        <div class="info">
-          <div class="title">${title}</div>
-          <div class="meta">
-            <span>${channel.name}</span>
-            <span class="live-badge">LIVE</span>
-          </div>
-        </div>
-      `;
-      container.appendChild(div);
-    }
-
-    CHANNELS.forEach(ch => createStreamCard(ch));
-
-    // Theme toggle
-    const themeToggle = document.getElementById('themeToggle');
-    themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-      document.body.classList.toggle('light');
-      themeToggle.textContent = document.body.classList.contains('dark') 
-        ? "☀ Light Mode" 
-        : "🌙 Dark Mode";
+      el.grid.appendChild(card);
     });
 
-    // Add new stream from form
-    document.getElementById('addStreamForm').addEventListener('submit', e => {
-      e.preventDefault();
-      const url = document.getElementById('streamUrl').value.trim();
-      if (url) {
-        createStreamCardFromUrl(url);
-        document.getElementById('streamUrl').value = "";
+    // Hook remove buttons
+    el.grid.querySelectorAll('.remove').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        const i = Number(e.currentTarget.dataset.idx);
+        streams.splice(i,1);
+        render();
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    return (str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
+  // ----- Load defaults -----
+  (async function loadDefaults(){
+    for (const ch of DEFAULT_CHANNELS) {
+      const liveUrl = `https://www.youtube.com/channel/${ch.id}/live`;
+      const item = await buildStreamItemFromAnyYouTubeUrl(liveUrl);
+      // Fallback title/author to known channel name if oEmbed fails
+      if (item) {
+        if (!item.title || item.title === 'Live Stream') item.title = ch.name + ' — Live';
+        if (!item.author || item.author === 'YouTube') item.author = ch.name;
+        streams.push(item);
+      } else {
+        streams.push({
+          embed: `https://www.youtube.com/embed/live_stream?channel=${ch.id}`,
+          title: ch.name + ' — Live',
+          author: ch.name,
+          source: liveUrl
+        });
       }
-    });
-  </script>
+    }
+    render();
+  })();
+</script>
 </body>
 </html>
