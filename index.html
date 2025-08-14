@@ -5,18 +5,43 @@
   <style>
     body {
       margin: 0;
-      background: #f9f9f9;
       font-family: Arial, sans-serif;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* Light Theme */
+    body.light {
+      background: #f9f9f9;
+      color: #0f0f0f;
+    }
+    body.light .stream {
+      background: #fff;
+    }
+    body.light header {
+      background: #fff;
       color: #0f0f0f;
     }
 
-    /* Top Navigation Bar */
+    /* Dark Theme */
+    body.dark {
+      background: #181818;
+      color: #ffffff;
+    }
+    body.dark .stream {
+      background: #202020;
+    }
+    body.dark header {
+      background: #202020;
+      color: #fff;
+    }
+
+    /* Header */
     header {
-      background: #fff;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 8px 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -29,12 +54,27 @@
       font-weight: bold;
       color: #ff0000;
     }
-
     .logo span {
-      color: black;
+      color: inherit;
       margin-left: 5px;
     }
 
+    /* Toggle Button */
+    .toggle-btn {
+      background: none;
+      border: 1px solid currentColor;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      color: inherit;
+      transition: background 0.2s;
+    }
+    .toggle-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* Streams Grid */
     #streams {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -44,38 +84,32 @@
 
     /* Stream Card */
     .stream {
-      background: #fff;
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
       transition: transform 0.2s ease;
       cursor: pointer;
     }
-
     .stream:hover {
       transform: translateY(-4px);
     }
-
     iframe {
       width: 100%;
       height: 180px;
       border: none;
       display: block;
     }
-
     .title {
       padding: 10px;
       font-weight: bold;
       font-size: 14px;
-      color: #0f0f0f;
     }
   </style>
 </head>
-<body>
+<body class="light">
   <header>
-    <div class="logo">
-      ▶ YouTube <span>Live</span>
-    </div>
+    <div class="logo">▶ YouTube <span>Live</span></div>
+    <button id="themeToggle" class="toggle-btn">🌙 Dark Mode</button>
   </header>
 
   <div id="streams"></div>
@@ -103,6 +137,16 @@
         <div class="title">${channel.name}</div>
       `;
       container.appendChild(div);
+    });
+
+    // Theme toggle logic
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+      themeToggle.textContent = document.body.classList.contains('dark') 
+        ? "☀ Light Mode" 
+        : "🌙 Dark Mode";
     });
   </script>
 </body>
