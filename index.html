@@ -2,15 +2,17 @@
 <html>
 <head>
   <title>Live Streams</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      background: #111;
-      color: white;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      background: #111;
+      color: white;
       transition: background 0.3s, color 0.3s;
+    }
+    body.light {
+      background: #fff;
+      color: #000;
     }
     header {
       display: flex;
@@ -18,26 +20,15 @@
       align-items: center;
       padding: 10px 15px;
       background: #202020;
-      position: sticky;
-      top: 0;
-      z-index: 10;
     }
-    h1 {
-      margin: 0;
-      font-size: 18px;
-    }
-    button {
-      padding: 5px 10px;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
+    body.light header {
+      background: #f2f2f2;
     }
     #streams {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
       padding: 15px;
-      justify-content: center;
     }
     .stream {
       flex: 1 1 320px;
@@ -45,7 +36,11 @@
       background: #222;
       padding: 10px;
       border-radius: 8px;
+      position: relative;
       transition: background 0.3s;
+    }
+    body.light .stream {
+      background: #f9f9f9;
     }
     iframe {
       width: 100%;
@@ -58,103 +53,116 @@
       font-weight: bold;
       font-size: 14px;
       text-align: center;
+      word-wrap: break-word;
     }
-    /* Light mode */
-    body.light {
-      background: #f9f9f9;
-      color: black;
+    .remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: red;
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
     }
-    body.light header {
-      background: #ddd;
-    }
-    body.light .stream {
-      background: #fff;
-    }
-    /* Mobile-friendly */
-    @media (max-width: 600px) {
-      .stream {
-        flex: 1 1 100%;
-        max-width: 100%;
-      }
-    }
-    #addForm {
+    .add-stream {
       padding: 10px;
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      background: #181818;
+      background: #202020;
     }
-    #addForm input {
-      padding: 5px;
+    body.light .add-stream {
+      background: #f2f2f2;
+    }
+    .add-stream input {
+      width: 70%;
+      padding: 6px;
       border: none;
       border-radius: 4px;
-      width: 60%;
+      margin-right: 8px;
+    }
+    .add-stream button {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #0f9d58;
+      color: white;
+    }
+    @media (max-width: 600px) {
+      #streams {
+        flex-direction: column;
+      }
+      .stream {
+        max-width: 100%;
+      }
+      iframe {
+        height: 200px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Live Streams</h1>
-    <button id="themeToggle">Toggle Dark/Light</button>
+    <h1>Live Now</h1>
+    <button id="toggleMode">Toggle Dark/Light</button>
   </header>
 
-  <div id="addForm">
-    <input type="text" id="streamUrl" placeholder="Paste YouTube Live link">
-    <button id="addBtn">Add</button>
+  <div class="add-stream">
+    <input type="text" id="streamLink" placeholder="Paste YouTube live stream link">
+    <button onclick="addStream()">Add</button>
   </div>
 
   <div id="streams"></div>
 
   <script>
-    const DEFAULT_STREAMS = [
-      { url: "https://www.youtube.com/embed/live_stream?channel=UCcDcRFXX2wEAQQcX88zOYfA", name: "WarlordGamingNow" },
-      { url: "https://www.youtube.com/embed/live_stream?channel=UC09gfxgap1eKxIKwNjwedYQ", name: "InvaderPsycho" },
-      { url: "https://www.youtube.com/embed/live_stream?channel=UCxLrSgg2Khs5Fc71GMvIKNQ", name: "The Destined Gamer" },
-      { url: "https://www.youtube.com/embed/live_stream?channel=UCmaUnINXzcFXbro2X4huKEQ", name: "RCade" },
-      { url: "https://www.youtube.com/embed/live_stream?channel=UCkI-24m6t-DkbCN4EprozlA", name: "SahilBeast" },
-      { url: "https://www.youtube.com/embed/live_stream?channel=UCt9blnRkIpyCAAXViMbCh1Q", name: "Guts Gaming" }
+    // Default channels
+    const CHANNELS = [
+      { link: "https://www.youtube.com/embed/live_stream?channel=UCcDcRFXX2wEAQQcX88zOYfA", name: "WarlordGamingNow" },
+      { link: "https://www.youtube.com/embed/live_stream?channel=UC09gfxgap1eKxIKwNjwedYQ", name: "InvaderPsycho" },
+      { link: "https://www.youtube.com/embed/live_stream?channel=UCxLrSgg2Khs5Fc71GMvIKNQ", name: "The Destined Gamer" },
+      { link: "https://www.youtube.com/embed/live_stream?channel=UCmaUnINXzcFXbro2X4huKEQ", name: "RCade" },
+      { link: "https://www.youtube.com/embed/live_stream?channel=UCkI-24m6t-DkbCN4EprozlA", name: "SahilBeast" },
+      { link: "https://www.youtube.com/embed/live_stream?channel=UCt9blnRkIpyCAAXViMbCh1Q", name: "Guts Gaming" }
     ];
 
     const container = document.getElementById('streams');
-    const themeToggle = document.getElementById('themeToggle');
-    const addBtn = document.getElementById('addBtn');
-    const streamUrl = document.getElementById('streamUrl');
 
-    function createStreamCard(url, name) {
-      const div = document.createElement('div');
-      div.className = 'stream';
-      div.innerHTML = `
-        <iframe src="${url}" allowfullscreen></iframe>
-        <div class="title">${name}</div>
-      `;
-      container.appendChild(div);
+    function renderStreams() {
+      container.innerHTML = '';
+      CHANNELS.forEach((channel, index) => {
+        const div = document.createElement('div');
+        div.className = 'stream';
+        div.innerHTML = `
+          <button class="remove-btn" onclick="removeStream(${index})">X</button>
+          <iframe src="${channel.link}" allowfullscreen></iframe>
+          <div class="title">${channel.name}</div>
+        `;
+        container.appendChild(div);
+      });
     }
 
-    // Load default streams
-    DEFAULT_STREAMS.forEach(s => createStreamCard(s.url, s.name));
+    function addStream() {
+      const link = document.getElementById('streamLink').value.trim();
+      if (!link) return;
+      let name = "Custom Stream";
+      const match = link.match(/channel\/([^\/\?]+)/);
+      if (match) name = match[1];
+      CHANNELS.push({ link, name });
+      renderStreams();
+      document.getElementById('streamLink').value = '';
+    }
 
-    // Theme toggle
-    themeToggle.addEventListener('click', () => {
+    function removeStream(index) {
+      CHANNELS.splice(index, 1);
+      renderStreams();
+    }
+
+    document.getElementById('toggleMode').addEventListener('click', () => {
       document.body.classList.toggle('light');
     });
 
-    // Add stream
-    addBtn.addEventListener('click', () => {
-      let url = streamUrl.value.trim();
-      if (!url) return;
-      
-      let name = "Custom Stream";
-      const match = url.match(/channel\/([^\/]+)/);
-      if (match) {
-        url = `https://www.youtube.com/embed/live_stream?channel=${match[1]}`;
-      } else if (url.includes("watch?v=")) {
-        const vidId = url.split("watch?v=")[1].split("&")[0];
-        url = `https://www.youtube.com/embed/${vidId}`;
-      }
-
-      createStreamCard(url, name);
-      streamUrl.value = "";
-    });
+    renderStreams();
   </script>
 </body>
 </html>
