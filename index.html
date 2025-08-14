@@ -8,81 +8,54 @@
       font-family: Arial, sans-serif;
       transition: background 0.3s, color 0.3s;
     }
-    body.light {
-      background: #f9f9f9;
-      color: #0f0f0f;
-    }
-    body.dark {
-      background: #181818;
-      color: #ffffff;
-    }
+    body.light { background: #f9f9f9; color: #0f0f0f; }
+    body.dark { background: #181818; color: #ffffff; }
+
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 16px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: inherit;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 16px; position: sticky; top: 0; z-index: 100;
+      background: inherit; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
-    .logo {
-      font-size: 20px;
-      font-weight: bold;
-      color: #ff0000;
-    }
+    .logo { font-size: 20px; font-weight: bold; color: #ff0000; }
+
     .toggle-btn {
-      background: none;
-      border: 1px solid currentColor;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-      color: inherit;
+      background: none; border: 1px solid currentColor;
+      padding: 5px 10px; border-radius: 5px; cursor: pointer;
+      font-size: 14px; color: inherit;
     }
+
+    /* Input Area */
+    #addStreamForm {
+      display: flex; gap: 8px; padding: 10px 20px;
+      background: inherit; position: sticky; top: 48px; z-index: 90;
+    }
+    #addStreamForm input {
+      flex: 1; padding: 8px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc;
+    }
+    #addStreamForm button {
+      padding: 8px 12px; font-size: 14px; border-radius: 4px; border: none;
+      background: #ff0000; color: white; cursor: pointer;
+    }
+    #addStreamForm button:hover { background: #cc0000; }
+
     #streams {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 20px;
-      padding: 20px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px; padding: 20px;
     }
     .stream {
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-      background: inherit;
-      transition: transform 0.2s ease;
+      border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      background: inherit; transition: transform 0.2s ease;
     }
     .stream:hover { transform: translateY(-4px); }
-    iframe {
-      width: 100%;
-      height: 180px;
-      border: none;
-      display: block;
-    }
-    .info {
-      padding: 10px;
-    }
-    .title {
-      font-weight: bold;
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
+    iframe { width: 100%; height: 180px; border: none; display: block; }
+    .info { padding: 10px; }
+    .title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
     .meta {
-      font-size: 12px;
-      color: gray;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size: 12px; color: gray; display: flex; justify-content: space-between; align-items: center;
     }
     .live-badge {
-      background: red;
-      color: white;
-      font-weight: bold;
-      font-size: 11px;
-      padding: 2px 5px;
-      border-radius: 3px;
+      background: red; color: white; font-weight: bold; font-size: 11px;
+      padding: 2px 5px; border-radius: 3px;
     }
   </style>
 </head>
@@ -91,6 +64,12 @@
     <div class="logo">▶ YouTube Live</div>
     <button id="themeToggle" class="toggle-btn">🌙 Dark Mode</button>
   </header>
+
+  <!-- Add New Live Stream Form -->
+  <form id="addStreamForm">
+    <input type="text" id="streamUrl" placeholder="Enter YouTube live stream link..." required>
+    <button type="submit">Add</button>
+  </form>
 
   <div id="streams"></div>
 
@@ -106,9 +85,9 @@
 
     const container = document.getElementById('streams');
 
-    async function fetchVideoTitle(channelId) {
+    async function fetchVideoTitle(url) {
       try {
-        const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/channel/${channelId}/live&format=json`);
+        const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
         if (!res.ok) throw new Error("No title found");
         const data = await res.json();
         return data.title || "Live Stream";
@@ -117,8 +96,51 @@
       }
     }
 
+    function extractChannelIdOrVideoId(url) {
+      let match;
+      // Check for channel link
+      match = url.match(/channel\/([^/?]+)/);
+      if (match) return { type: 'channel', id: match[1] };
+
+      // Check for video link
+      match = url.match(/v=([^&]+)/);
+      if (match) return { type: 'video', id: match[1] };
+
+      return null;
+    }
+
+    async function createStreamCardFromUrl(url) {
+      const info = extractChannelIdOrVideoId(url);
+      if (!info) return alert("Invalid YouTube URL");
+
+      const title = await fetchVideoTitle(url);
+
+      const div = document.createElement('div');
+      div.className = 'stream';
+
+      let embedSrc = "";
+      if (info.type === 'channel') {
+        embedSrc = `https://www.youtube.com/embed/live_stream?channel=${info.id}`;
+      } else if (info.type === 'video') {
+        embedSrc = `https://www.youtube.com/embed/${info.id}`;
+      }
+
+      div.innerHTML = `
+        <iframe src="${embedSrc}" allowfullscreen></iframe>
+        <div class="info">
+          <div class="title">${title}</div>
+          <div class="meta">
+            <span>${info.type === 'channel' ? "Channel" : "Video"}</span>
+            <span class="live-badge">LIVE</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
     async function createStreamCard(channel) {
-      const title = await fetchVideoTitle(channel.id);
+      const url = `https://www.youtube.com/channel/${channel.id}/live`;
+      const title = await fetchVideoTitle(url);
       const div = document.createElement('div');
       div.className = 'stream';
       div.innerHTML = `
@@ -144,6 +166,16 @@
       themeToggle.textContent = document.body.classList.contains('dark') 
         ? "☀ Light Mode" 
         : "🌙 Dark Mode";
+    });
+
+    // Add new stream from form
+    document.getElementById('addStreamForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const url = document.getElementById('streamUrl').value.trim();
+      if (url) {
+        createStreamCardFromUrl(url);
+        document.getElementById('streamUrl').value = "";
+      }
     });
   </script>
 </body>
