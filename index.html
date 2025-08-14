@@ -1,359 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Live Streams</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Multi-View</title>
 <style>
-  :root{
-    --bg:#111;
-    --text:#fff;
-    --card:#1e1e1e;
-    --muted:#a1a1a1;
-    --accent:#ff0000;
-    --btn:#2d2d2d;
-  }
-  body.light{
-    --bg:#f9f9f9;
-    --text:#0f0f0f;
-    --card:#ffffff;
-    --muted:#666;
-    --accent:#d60000;
-    --btn:#eaeaea;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    font-family:Arial,Helvetica,sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    transition:background .25s,color .25s;
-  }
-
-  /* Header */
-  header{
-    position:sticky;top:0;z-index:50;
-    background:var(--card);
-    display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;gap:10px;
-    border-bottom:1px solid #00000022;
-  }
-  .brand{display:flex;align-items:center;gap:8px;font-weight:700}
-  .logo-dot{width:14px;height:14px;background:var(--accent);border-radius:3px}
-  .controls{display:flex;gap:8px;align-items:center}
-
-  /* Form */
-  #addForm{
-    display:flex;gap:8px;align-items:center;
-    padding:10px 14px;background:transparent;
-    position:sticky;top:56px;z-index:40;
-  }
-  #urlInput{
-    flex:1;min-width:0;
-    padding:10px 12px;border-radius:10px;border:1px solid #0000;
-    background:var(--card);color:var(--text);
-    outline:none;
-  }
-  #addBtn,#modeToggle{
-    border:none;border-radius:10px;padding:10px 12px;cursor:pointer;
-    background:var(--btn);color:var(--text);font-weight:600;
-  }
-  #addBtn{background:var(--accent);color:#fff}
-  #addBtn:active{transform:translateY(1px)}
-  #modeToggle:active{transform:translateY(1px)}
-
-  /* Grid */
-  #streams{
-    padding:14px;
-    display:grid;gap:14px;
-    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
-  }
-
-  /* Card */
-  .card{
-    background:var(--card);
-    border-radius:14px;overflow:hidden;
-    box-shadow:0 1px 4px #00000022;
-    display:flex;flex-direction:column;
-    position:relative;
-  }
-  .frame{
-    width:100%;
-    aspect-ratio:16/9;
-    border:0;display:block;
-    background:#000;
-  }
-  .info{padding:10px 12px}
-  .title{font-size:14px;font-weight:700;line-height:1.3;margin:0 0 6px}
-  .meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:10px}
-  .badge{
-    background:var(--accent);color:#fff;font-size:11px;font-weight:700;
-    padding:2px 6px;border-radius:4px;white-space:nowrap;
-  }
-  .remove{
-    position:absolute;top:8px;right:8px;
-    border:none;background:#00000080;color:#fff;
-    width:28px;height:28px;border-radius:999px;cursor:pointer;
-    font-size:16px;line-height:28px;text-align:center;
-  }
-  .remove:active{transform:translateY(1px)}
-
-  /* Mobile niceties */
-  @media (max-width:600px){
-    header{padding:8px 10px}
-    #addForm{top:52px;padding:8px 10px}
-    #streams{padding:10px;gap:10px}
-  }
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #121212;
+        color: white;
+    }
+    header {
+        background: #1f1f1f;
+        padding: 10px;
+        text-align: center;
+    }
+    #controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    input {
+        padding: 8px;
+        border: none;
+        border-radius: 4px;
+        width: 250px;
+    }
+    button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        background-color: #ff0000;
+        color: white;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #cc0000;
+    }
+    #videoGrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 10px;
+        padding: 10px;
+    }
+    .videoCard {
+        background: #1f1f1f;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    iframe {
+        width: 100%;
+        height: 180px;
+    }
+    .videoInfo {
+        padding: 8px;
+        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .removeBtn {
+        background: #333;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .removeBtn:hover {
+        background: #555;
+    }
+    @media (max-width: 500px) {
+        iframe {
+            height: 200px;
+        }
+    }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">
-    <div class="logo-dot"></div>
-    <div>YouTube Live Viewer</div>
-  </div>
-  <div class="controls">
-    <button id="modeToggle">🌙</button>
-  </div>
+    <h1>YouTube Multi-View</h1>
+    <div id="controls">
+        <input type="text" id="videoUrl" placeholder="Paste YouTube link here">
+        <button onclick="addVideo()">Add</button>
+    </div>
 </header>
 
-<form id="addForm" autocomplete="off">
-  <input id="urlInput" type="url" inputmode="url" placeholder="Paste any YouTube link (watch, youtu.be, channel/live, embed)…" required />
-  <button id="addBtn" type="submit">Add</button>
-</form>
-
-<main id="streams"></main>
+<main id="videoGrid"></main>
 
 <script>
-  // ----- Default channels (preloaded) -----
-  const DEFAULT_CHANNELS = [
-    { id: "UCcDcRFXX2wEAQQcX88zOYfA", name: "WarlordGamingNow" },
-    { id: "UC09gfxgap1eKxIKwNjwedYQ", name: "InvaderPsycho" },
-    { id: "UCxLrSgg2Khs5Fc71GMvIKNQ", name: "The Destined Gamer" },
-    { id: "UCmaUnINXzcFXbro2X4huKEQ", name: "RCade" },
-    { id: "UCkI-24m6t-DkbCN4EprozlA", name: "SahilBeast" },
-    { id: "UCt9blnRkIpyCAAXViMbCh1Q", name: "Guts Gaming" }
-  ];
+    const videoGrid = document.getElementById('videoGrid');
 
-  const streams = []; // {embed, title, author, source}
+    // Default channels/videos
+    const defaultVideos = [
+        "https://www.youtube.com/watch?v=3dYHHUVVQmc",
+        "https://www.youtube.com/watch?v=5qap5aO4i9A",
+        "https://www.youtube.com/watch?v=DWcJFNfaw9c"
+    ];
 
-  const el = {
-    grid: document.getElementById('streams'),
-    form: document.getElementById('addForm'),
-    input: document.getElementById('urlInput'),
-    mode: document.getElementById('modeToggle')
-  };
+    // On load - add default videos
+    defaultVideos.forEach(url => addVideoFromUrl(url));
 
-  // Persist theme
-  (() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light') document.body.classList.add('light');
-    el.mode.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
-  })();
-
-  el.mode.addEventListener('click', () => {
-    document.body.classList.toggle('light');
-    el.mode.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
-    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
-  });
-
-  // Add via form
-  el.form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const url = el.input.value.trim();
-    if (!url) return;
-
-    try {
-      const item = await buildStreamItemFromAnyYouTubeUrl(url);
-      if (!item || !item.embed) {
-        alert("Sorry, couldn't parse that YouTube link.");
-        return;
-      }
-      streams.push(item);
-      render();
-      el.input.value = '';
-    } catch (err) {
-      console.error(err);
-      alert("There was a problem adding this link.");
-    }
-  });
-
-  // Build card from any YT link (watch, youtu.be, channel/live, embed…)
-  async function buildStreamItemFromAnyYouTubeUrl(inputUrl) {
-    // 1) Try oEmbed first (works for watch links and many others; no API key).
-    const oembed = await fetchOEmbed(inputUrl);
-    if (oembed && oembed.html) {
-      const src = extractIframeSrc(oembed.html);
-      if (src) {
-        return {
-          embed: toEmbedSrc(src),
-          title: oembed.title || 'Live Stream',
-          author: oembed.author_name || 'YouTube',
-          source: inputUrl
-        };
-      }
+    function extractVideoId(url) {
+        const regex = /(?:youtube\.com\/(?:watch\?v=|live\/)|youtu\.be\/)([^&?/]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
     }
 
-    // 2) Fallback heuristic parsing.
-    const parsed = toEmbedFromHeuristics(inputUrl);
-    if (!parsed) return null;
-
-    // Try to enrich title/author via oEmbed using a better URL target
-    const metaTry = await fetchOEmbed(parsed.oEmbedTarget || inputUrl);
-    return {
-      embed: parsed.embed,
-      title: (metaTry && metaTry.title) ? metaTry.title : 'Live Stream',
-      author: (metaTry && metaTry.author_name) ? metaTry.author_name : (parsed.kind === 'channel' ? 'Channel' : 'YouTube'),
-      source: inputUrl
-    };
-  }
-
-  // ---- Helpers ----
-  async function fetchOEmbed(url){
-    try{
-      const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-      if(!res.ok) return null;
-      return await res.json();
-    }catch{
-      return null;
-    }
-  }
-
-  function extractIframeSrc(html){
-    const m = html.match(/src="([^"]+)"/i);
-    return m ? m[1] : null;
-  }
-
-  // Normalize any embed URL to standard youtube embed (strip extra params)
-  function toEmbedSrc(src){
-    try{
-      const u = new URL(src);
-      // already an /embed/… or /embed/live_stream
-      if (u.pathname.startsWith('/embed/')) {
-        // Keep core ID, drop autoplay & other noisy params
-        if (u.searchParams.has('autoplay')) u.searchParams.delete('autoplay');
-        return u.origin + u.pathname + (u.searchParams.toString() ? `?${u.searchParams.toString()}` : '');
-      }
-      // fallback: return as-is
-      return src;
-    }catch{
-      return src;
-    }
-  }
-
-  // Heuristic conversion when oEmbed doesn't return HTML
-  function toEmbedFromHeuristics(raw){
-    let u;
-    try { u = new URL(raw); } catch { return null; }
-
-    const host = u.hostname.replace(/^www\./,'');
-    const p = u.pathname;
-
-    // youtu.be/<id>
-    if (host === 'youtu.be' && p.length > 1) {
-      const id = p.slice(1).split('/')[0];
-      return { kind:'video', embed:`https://www.youtube.com/embed/${id}`, oEmbedTarget:`https://www.youtube.com/watch?v=${id}` };
+    function addVideo() {
+        const url = document.getElementById('videoUrl').value.trim();
+        if (!url) return;
+        addVideoFromUrl(url);
+        document.getElementById('videoUrl').value = '';
     }
 
-    // youtube.com/watch?v=ID
-    if (host.endsWith('youtube.com') && (p === '/watch' || p === '/live')) {
-      const id = u.searchParams.get('v');
-      if (id) return { kind:'video', embed:`https://www.youtube.com/embed/${id}`, oEmbedTarget:`https://www.youtube.com/watch?v=${id}` };
+    function addVideoFromUrl(url) {
+        const videoId = extractVideoId(url);
+        if (!videoId) {
+            alert("Invalid YouTube link");
+            return;
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1`;
+        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        iframe.allowFullscreen = true;
+
+        const title = document.createElement('span');
+        title.textContent = "Loading title...";
+
+        // Fetch title dynamically from oEmbed
+        fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+            .then(res => res.json())
+            .then(data => title.textContent = data.title)
+            .catch(() => title.textContent = "YouTube Video");
+
+        const removeBtn = document.createElement('div');
+        removeBtn.textContent = "Remove";
+        removeBtn.className = "removeBtn";
+        removeBtn.onclick = () => videoGrid.removeChild(card);
+
+        const infoBar = document.createElement('div');
+        infoBar.className = "videoInfo";
+        infoBar.appendChild(title);
+        infoBar.appendChild(removeBtn);
+
+        const card = document.createElement('div');
+        card.className = "videoCard";
+        card.appendChild(iframe);
+        card.appendChild(infoBar);
+
+        videoGrid.appendChild(card);
     }
-
-    // youtube.com/shorts/ID
-    if (host.endsWith('youtube.com') && p.startsWith('/shorts/')) {
-      const id = p.split('/')[2];
-      if (id) return { kind:'video', embed:`https://www.youtube.com/embed/${id}`, oEmbedTarget:`https://www.youtube.com/watch?v=${id}` };
-    }
-
-    // Already an embed link
-    if (host.endsWith('youtube.com') && p.startsWith('/embed/')) {
-      return { kind:'video', embed: u.toString() };
-    }
-
-    // Channel live link or channel page
-    if (host.endsWith('youtube.com') && p.startsWith('/channel/')) {
-      const channelId = p.split('/')[2];
-      if (channelId) {
-        return {
-          kind:'channel',
-          embed:`https://www.youtube.com/embed/live_stream?channel=${channelId}`,
-          oEmbedTarget:`https://www.youtube.com/channel/${channelId}/live`
-        };
-      }
-    }
-
-    // Some people paste ?channel=UC... links
-    if (u.searchParams.get('channel')) {
-      const channelId = u.searchParams.get('channel');
-      return {
-        kind:'channel',
-        embed:`https://www.youtube.com/embed/live_stream?channel=${channelId}`,
-        oEmbedTarget:`https://www.youtube.com/channel/${channelId}/live`
-      };
-    }
-
-    // Cannot confidently parse
-    return null;
-  }
-
-  // ----- Rendering -----
-  function render(){
-    el.grid.innerHTML = '';
-    streams.forEach((s, idx) => {
-      const card = document.createElement('article');
-      card.className = 'card';
-      card.innerHTML = `
-        <button class="remove" title="Remove" data-idx="${idx}">×</button>
-        <iframe class="frame" src="${s.embed}" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
-        <div class="info">
-          <h3 class="title" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</h3>
-          <div class="meta">
-            <span>${escapeHtml(s.author || 'YouTube')}</span>
-            <span class="badge">LIVE</span>
-          </div>
-        </div>
-      `;
-      el.grid.appendChild(card);
-    });
-
-    // Hook remove buttons
-    el.grid.querySelectorAll('.remove').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
-        const i = Number(e.currentTarget.dataset.idx);
-        streams.splice(i,1);
-        render();
-      });
-    });
-  }
-
-  function escapeHtml(str){
-    return (str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-  }
-
-  // ----- Load defaults -----
-  (async function loadDefaults(){
-    for (const ch of DEFAULT_CHANNELS) {
-      const liveUrl = `https://www.youtube.com/channel/${ch.id}/live`;
-      const item = await buildStreamItemFromAnyYouTubeUrl(liveUrl);
-      // Fallback title/author to known channel name if oEmbed fails
-      if (item) {
-        if (!item.title || item.title === 'Live Stream') item.title = ch.name + ' — Live';
-        if (!item.author || item.author === 'YouTube') item.author = ch.name;
-        streams.push(item);
-      } else {
-        streams.push({
-          embed: `https://www.youtube.com/embed/live_stream?channel=${ch.id}`,
-          title: ch.name + ' — Live',
-          author: ch.name,
-          source: liveUrl
-        });
-      }
-    }
-    render();
-  })();
 </script>
+
 </body>
 </html>
