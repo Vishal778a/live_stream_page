@@ -2,33 +2,59 @@
 <html>
 <head>
   <title>Live Streams</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 0;
       background: #111;
       color: white;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.light {
-      background: #fff;
-      color: #000;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
     }
     header {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 15px;
-      background: #202020;
+      margin-bottom: 10px;
     }
-    body.light header {
-      background: #f2f2f2;
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    #modeToggle {
+      padding: 5px 10px;
+      background: #444;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+    #addForm {
+      margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    #addForm input {
+      flex: 1;
+      padding: 6px;
+      border-radius: 4px;
+      border: none;
+    }
+    #addForm button {
+      padding: 6px 10px;
+      border: none;
+      background: #28a745;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
     }
     #streams {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
-      padding: 15px;
+      justify-content: center;
     }
     .stream {
       flex: 1 1 320px;
@@ -37,10 +63,6 @@
       padding: 10px;
       border-radius: 8px;
       position: relative;
-      transition: background 0.3s;
-    }
-    body.light .stream {
-      background: #f9f9f9;
     }
     iframe {
       width: 100%;
@@ -53,116 +75,100 @@
       font-weight: bold;
       font-size: 14px;
       text-align: center;
-      word-wrap: break-word;
     }
-    .remove-btn {
+    .removeBtn {
       position: absolute;
-      top: 8px;
-      right: 8px;
+      top: 5px;
+      right: 5px;
       background: red;
       border: none;
+      border-radius: 50%;
       color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
+      width: 22px;
+      height: 22px;
       cursor: pointer;
-      font-size: 12px;
     }
-    .add-stream {
-      padding: 10px;
-      background: #202020;
+    /* Light Mode */
+    body.light {
+      background: #f0f0f0;
+      color: black;
     }
-    body.light .add-stream {
-      background: #f2f2f2;
+    body.light .stream {
+      background: #fff;
     }
-    .add-stream input {
-      width: 70%;
-      padding: 6px;
-      border: none;
-      border-radius: 4px;
-      margin-right: 8px;
+    body.light #modeToggle {
+      background: #ddd;
+      color: black;
     }
-    .add-stream button {
-      padding: 6px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      background: #0f9d58;
-      color: white;
-    }
-    @media (max-width: 600px) {
-      #streams {
-        flex-direction: column;
-      }
-      .stream {
-        max-width: 100%;
-      }
-      iframe {
-        height: 200px;
-      }
+    body.light #addForm button {
+      background: #007bff;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Live Now</h1>
-    <button id="toggleMode">Toggle Dark/Light</button>
+    <button id="modeToggle">Toggle Dark/Light</button>
   </header>
 
-  <div class="add-stream">
-    <input type="text" id="streamLink" placeholder="Paste YouTube live stream link">
-    <button onclick="addStream()">Add</button>
-  </div>
+  <form id="addForm">
+    <input type="text" id="channelLink" placeholder="Paste YouTube live stream link...">
+    <button type="submit">Add</button>
+  </form>
 
   <div id="streams"></div>
 
   <script>
-    // Default channels
-    const CHANNELS = [
-      { link: "https://www.youtube.com/embed/live_stream?channel=UCcDcRFXX2wEAQQcX88zOYfA", name: "WarlordGamingNow" },
-      { link: "https://www.youtube.com/embed/live_stream?channel=UC09gfxgap1eKxIKwNjwedYQ", name: "InvaderPsycho" },
-      { link: "https://www.youtube.com/embed/live_stream?channel=UCxLrSgg2Khs5Fc71GMvIKNQ", name: "The Destined Gamer" },
-      { link: "https://www.youtube.com/embed/live_stream?channel=UCmaUnINXzcFXbro2X4huKEQ", name: "RCade" },
-      { link: "https://www.youtube.com/embed/live_stream?channel=UCkI-24m6t-DkbCN4EprozlA", name: "SahilBeast" },
-      { link: "https://www.youtube.com/embed/live_stream?channel=UCt9blnRkIpyCAAXViMbCh1Q", name: "Guts Gaming" }
+    let channels = [
+      { id: "UCcDcRFXX2wEAQQcX88zOYfA", name: "WarlordGamingNow" },
+      { id: "UC09gfxgap1eKxIKwNjwedYQ", name: "InvaderPsycho" },
+      { id: "UCxLrSgg2Khs5Fc71GMvIKNQ", name: "The Destined Gamer" },
+      { id: "UCmaUnINXzcFXbro2X4huKEQ", name: "RCade" },
+      { id: "UCkI-24m6t-DkbCN4EprozlA", name: "SahilBeast" },
+      { id: "UCt9blnRkIpyCAAXViMbCh1Q", name: "Guts Gaming" }
     ];
 
     const container = document.getElementById('streams');
 
-    function renderStreams() {
-      container.innerHTML = '';
-      CHANNELS.forEach((channel, index) => {
+    function renderChannels() {
+      container.innerHTML = "";
+      channels.forEach((channel, index) => {
         const div = document.createElement('div');
         div.className = 'stream';
         div.innerHTML = `
-          <button class="remove-btn" onclick="removeStream(${index})">X</button>
-          <iframe src="${channel.link}" allowfullscreen></iframe>
+          <button class="removeBtn" onclick="removeChannel(${index})">×</button>
+          <iframe src="https://www.youtube.com/embed/live_stream?channel=${channel.id}" allowfullscreen></iframe>
           <div class="title">${channel.name}</div>
         `;
         container.appendChild(div);
       });
     }
 
-    function addStream() {
-      const link = document.getElementById('streamLink').value.trim();
-      if (!link) return;
-      let name = "Custom Stream";
-      const match = link.match(/channel\/([^\/\?]+)/);
-      if (match) name = match[1];
-      CHANNELS.push({ link, name });
-      renderStreams();
-      document.getElementById('streamLink').value = '';
+    function removeChannel(index) {
+      channels.splice(index, 1);
+      renderChannels();
     }
 
-    function removeStream(index) {
-      CHANNELS.splice(index, 1);
-      renderStreams();
-    }
+    document.getElementById('addForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const link = document.getElementById('channelLink').value.trim();
+      if (link) {
+        const match = link.match(/channel\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          channels.push({ id: match[1], name: "New Channel" });
+          renderChannels();
+        } else {
+          alert("Invalid YouTube channel link");
+        }
+        document.getElementById('channelLink').value = "";
+      }
+    });
 
-    document.getElementById('toggleMode').addEventListener('click', () => {
+    document.getElementById('modeToggle').addEventListener('click', function() {
       document.body.classList.toggle('light');
     });
 
-    renderStreams();
+    renderChannels();
   </script>
 </body>
 </html>
